@@ -1,0 +1,4 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+   com.itheima.sfbx.framework.rule.config.SpringApplicationAware,\
+   com.itheima.sfbx.framework.rule.config.URuleServletRegistration,\
+   com.itheima.sfbx.framework.rule.template.RuleTemplate

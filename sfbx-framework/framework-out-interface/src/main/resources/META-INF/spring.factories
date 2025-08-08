@@ -1,0 +1,4 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+   com.itheima.sfbx.framework.outinterface.config.OutInterfaceSourceConfig,\
+   com.itheima.sfbx.framework.outinterface.service.impl.BankCardServiceImpl,\
+   com.itheima.sfbx.framework.outinterface.service.impl.TokenServiceImpl
