@@ -16,108 +16,81 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * @Description：保障项响应接口
- */
-@Slf4j
 @Api(tags = "保障项")
 @RestController
-@RequestMapping("safeguard")
+@RequestMapping("/safeguard")
 public class SafeguardController {
 
     @Autowired
-    ISafeguardService safeguardService;
+    private ISafeguardService safeguardService;
 
-    /***
-     * @description 多条件查询保障项分页
-     * @param safeguardVO 保障项VO查询条件
-     * @param pageNum 页码
-     * @param pageSize 每页条数
-     * @return: Page<SafeguardVO>
+    /**
+     * 分页查询
+     * @param safeguardVO 查询条件
+     * @param pageNum 页号
+     * @param pageSize 页大小
+     * @return 查询结果
      */
-    @PostMapping("page/{pageNum}/{pageSize}")
-    @ApiOperation(value = "保障项分页",notes = "保障项分页")
+    @ApiOperation("分页查询")
+    /*swagger 注解说明
+    @ApiImplicitParams 表示能接受的参数列表。
+    @ApiImplicitParam 表示具体的参数说明和属性
+    @ApiOperationSupport 表示swagger的扩展属性，可以对指定参数做扩展补充
+    includeParameters 表示参数safeguardVO中的属性，可以指定哪些属性需要swagger展示
+     */
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "safeguardVO",value = "保障项VO对象",required = true,dataType = "SafeguardVO"),
-        @ApiImplicitParam(paramType = "path",name = "pageNum",value = "页码",example = "1",dataType = "Integer"),
-        @ApiImplicitParam(paramType = "path",name = "pageSize",value = "每页条数",example = "10",dataType = "Integer")
+            @ApiImplicitParam(name = "safeguardVO",value = "VO对象",required = true,dataType = "SafeguardVO"),
+            @ApiImplicitParam(paramType = "path",name = "pageNum",value = "页码",example = "1",dataType = "Integer"),
+            @ApiImplicitParam(paramType = "path",name = "pageSize",value = "每页条数",example = "10",dataType = "Integer")
     })
-    @ApiOperationSupport(includeParameters = {"safeguardVO.dataState","safeguardVO.safeguardKey","safeguardVO.safeguardKeyName","safeguardVO.safeguardVal","safeguardVO.safeguardType","safeguardVO.sortNo","safeguardVO.remake"})
+    @ApiOperationSupport(includeParameters = {"safeguardVO.safeguardType","safeguardVO.safeguardKey","safeguardVO.safeguardVal","safeguardVO.remake"})
+    @PostMapping("/page/{pageNum}/{pageSize}")
     public ResponseResult<Page<SafeguardVO>> findSafeguardVOPage(
-                                    @RequestBody SafeguardVO safeguardVO,
-                                    @PathVariable("pageNum") int pageNum,
-                                    @PathVariable("pageSize") int pageSize) {
-        Page<SafeguardVO> safeguardVOPage = safeguardService.findPage(safeguardVO, pageNum, pageSize);
-        return ResponseResultBuild.successBuild(safeguardVOPage);
+            @RequestBody SafeguardVO safeguardVO,
+            @PathVariable("pageNum") int pageNum,
+            @PathVariable("pageSize") int pageSize
+    ){
+        Page<SafeguardVO> page = safeguardService.findPage(safeguardVO, pageNum, pageSize);
+        return ResponseResultBuild.successBuild(page);
     }
-
     /**
-     * @Description 保存保障项
-     * @param safeguardVO 保障项VO对象
-     * @return SafeguardVO
+     * 新增保险项
+     * @param safeguardVO 保险项VO对象
+     * @return 保险项VO对象
      */
+    @ApiOperation(value = "新增保险项",notes = "新增保险项")
+    @ApiImplicitParam(name = "safeguardVO",value = "VO对象",required = true,dataType = "SafeguardVO")
+    @ApiOperationSupport(includeParameters ={"safeguardVO.safeguardType","safeguardVO.safeguardKey","safeguardVO.safeguardVal","safeguardVO.remake", "safeguardVO.dataState", "safeguardVO.sortNo"})
     @PutMapping
-    @ApiOperation(value = "保存Safeguard",notes = "添加Safeguard")
-    @ApiImplicitParam(name = "safeguardVO",value = "保障项VO对象",required = true,dataType = "SafeguardVO")
-    @ApiOperationSupport(includeParameters = {"safeguardVO.dataState","safeguardVO.safeguardKey","safeguardVO.safeguardKeyName","safeguardVO.safeguardVal","safeguardVO.safeguardType","safeguardVO.sortNo","safeguardVO.remake"})
-    public ResponseResult<SafeguardVO> createSafeguard(@RequestBody SafeguardVO safeguardVO) {
-        SafeguardVO safeguardVOResult = safeguardService.save(safeguardVO);
-        return ResponseResultBuild.successBuild(safeguardVOResult);
+    public ResponseResult<SafeguardVO> saveSafeguardVO(@RequestBody SafeguardVO safeguardVO){
+        SafeguardVO save = safeguardService.save(safeguardVO);
+        return ResponseResultBuild.successBuild(save);
     }
-
     /**
-     * @Description 修改保障项
-     * @param safeguardVO 保障项VO对象
-     * @return Boolean 是否修改成功
+     * 修改保险项
+     * @param safeguardVO 保险项VO对象
+     * @return 保险项VO对象
      */
+    @ApiOperation(value = "修改保险项",notes = "修改保险项")
+    @ApiImplicitParam(name = "safeguardVO",value = "VO对象",required = true,dataType = "SafeguardVO")
+    @ApiOperationSupport(includeParameters = {"safeguardVO.id","safeguardVO.safeguardType","safeguardVO.safeguardKey","safeguardVO.safeguardVal","safeguardVO.remake", "safeguardVO.dataState", "safeguardVO.sortNo"})
     @PatchMapping
-    @ApiOperation(value = "修改保障项",notes = "修改保障项")
-    @ApiImplicitParam(name = "safeguardVO",value = "保障项VO对象",required = true,dataType = "SafeguardVO")
-    @ApiOperationSupport(includeParameters = {"safeguardVO.id","safeguardVO.dataState","safeguardVO.safeguardKey","safeguardVO.safeguardKeyName","safeguardVO.safeguardVal","safeguardVO.safeguardType","safeguardVO.sortNo","safeguardVO.remake"})
-    public ResponseResult<Boolean> updateSafeguard(@RequestBody SafeguardVO safeguardVO) {
-        Boolean flag = safeguardService.update(safeguardVO);
-        return ResponseResultBuild.successBuild(flag);
+    public ResponseResult<Boolean> updateSafeguardVO(@RequestBody SafeguardVO safeguardVO){
+        Boolean update = safeguardService.update(safeguardVO);
+        return ResponseResultBuild.successBuild(update);
     }
-
     /**
-     * @Description 删除保障项
-     * @param safeguardVO 刪除条件：checkedIds 不可为空
-     * @return
+     * 删除保险项
+     * @param safeguardVO 保险项VO对象
+     * @return 删除结果
      */
-    @DeleteMapping
-    @ApiOperation(value = "删除保障项",notes = "删除保障项")
-    @ApiImplicitParam(name = "safeguardVO",value = "保障项VO对象",required = true,dataType = "SafeguardVO")
+    @ApiOperation(value = "删除保险项",notes = "删除保险项")
+    @ApiImplicitParam(name = "safeguardVO",value = "VO对象",required = true,dataType = "SafeguardVO")
     @ApiOperationSupport(includeParameters = {"safeguardVO.checkedIds"})
-    public ResponseResult<Boolean> deleteSafeguard(@RequestBody SafeguardVO safeguardVO) {
-        Boolean flag = safeguardService.delete(safeguardVO.getCheckedIds());
-        return ResponseResultBuild.successBuild(flag);
-    }
-
-    /***
-     * @description 多条件查询保障项列表
-     * @param safeguardVO 保障项VO对象
-     * @return List<SafeguardVO>
-     */
-    @PostMapping("list")
-    @ApiOperation(value = "多条件查询保障项列表",notes = "多条件查询保障项列表")
-    @ApiImplicitParam(name = "safeguardVO",value = "保障项VO对象",required = true,dataType = "SafeguardVO")
-    @ApiOperationSupport(includeParameters = {"safeguardVO.dataState","safeguardVO.safeguardKey","safeguardVO.safeguardKeyName","safeguardVO.safeguardVal","safeguardVO.safeguardType","safeguardVO.sortNo","safeguardVO.remake"})
-    public ResponseResult<List<SafeguardVO>> safeguardList(@RequestBody SafeguardVO safeguardVO) {
-        List<SafeguardVO> safeguardVOList = safeguardService.findList(safeguardVO);
-        return ResponseResultBuild.successBuild(safeguardVOList);
-    }
-
-    /***
-     * @description 按safeguardKey查询SafeguardVO
-     * @param safeguardKey 保障项key
-     * @return SafeguardVO
-     */
-    @PostMapping("safeguard-key/{safeguardKey}")
-    @ApiOperation(value = "保障项key查询SafeguardVO",notes = "保障项key查询SafeguardVO")
-    @ApiImplicitParam(paramType = "path",name = "safeguardKey",value = "保障项key",dataType = "String")
-    public ResponseResult<SafeguardVO> findBySafeguardKey(@PathVariable("safeguardKey") String safeguardKey) {
-        SafeguardVO safeguardVO = safeguardService.findBySafeguardKey(safeguardKey);
-        return ResponseResultBuild.successBuild(safeguardVO);
+    @DeleteMapping
+    public ResponseResult<Boolean> deleteSafeguardVO(@RequestBody SafeguardVO safeguardVO){
+        Boolean delete = safeguardService.delete(safeguardVO.getCheckedIds());
+        return ResponseResultBuild.successBuild(delete);
     }
 
 }

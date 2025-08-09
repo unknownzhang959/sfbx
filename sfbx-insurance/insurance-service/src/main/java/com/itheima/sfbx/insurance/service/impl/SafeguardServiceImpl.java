@@ -32,189 +32,80 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import lombok.extern.slf4j.Slf4j;
-/**
- * @Description：保障项服务实现类
- */
 @Slf4j
 @Service
 public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard> implements ISafeguardService {
-
-
-    /***
-    * @description 保障项多条件组合
-    * @param safeguardVO 保障项
-    * @return QueryWrapper查询条件
-    */
-    private QueryWrapper<Safeguard> queryWrapper(SafeguardVO safeguardVO){
-        QueryWrapper<Safeguard> queryWrapper = new QueryWrapper<>();
-        //条例键查询
-        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getSafeguardKey())) {
-            queryWrapper.lambda().eq(Safeguard::getSafeguardKey,safeguardVO.getSafeguardKey());
-        }
-        //条例键名称查询
-        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getSafeguardKeyName())) {
-            queryWrapper.lambda().eq(Safeguard::getSafeguardKeyName,safeguardVO.getSafeguardKeyName());
-        }
-        //条例值查询
-        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getSafeguardVal())) {
-            queryWrapper.lambda().eq(Safeguard::getSafeguardVal,safeguardVO.getSafeguardVal());
-        }
-        //排序查询
-        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getSortNo())) {
-            queryWrapper.lambda().eq(Safeguard::getSortNo,safeguardVO.getSortNo());
-        }
-        //备注查询
-        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getRemake())) {
-            queryWrapper.lambda().eq(Safeguard::getRemake,safeguardVO.getRemake());
-        }
-        //状态查询
-        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getDataState())) {
-            queryWrapper.lambda().eq(Safeguard::getDataState,safeguardVO.getDataState());
-        }
-        //按创建时间降序
-        queryWrapper.lambda().orderByDesc(Safeguard::getCreateTime);
-        return queryWrapper;
-    }
-
     @Override
-    @Cacheable(value = SafeguardCacheConstant.PAGE,key ="#pageNum+'-'+#pageSize+'-'+#safeguardVO.hashCode()")
     public Page<SafeguardVO> findPage(SafeguardVO safeguardVO, int pageNum, int pageSize) {
-        try {
-            //构建分页对象
-            Page<Safeguard> SafeguardPage = new Page<>(pageNum,pageSize);
-            //构建查询条件
-            QueryWrapper<Safeguard> queryWrapper = queryWrapper(safeguardVO);
-            //执行分页查询
-            Page<SafeguardVO> safeguardVOPage = BeanConv.toPage(
-                page(SafeguardPage, queryWrapper), SafeguardVO.class);
-            //返回结果
-            return safeguardVOPage;
-        }catch (Exception e){
-            log.error("保障项分页查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(SafeguardEnum.PAGE_FAIL);
-        }
+        Page<Safeguard> safeguardPage = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<Safeguard> queryWrapper = new LambdaQueryWrapper<>();
+        //根据保障项编号
+        queryWrapper.eq(!EmptyUtil.isNullOrEmpty(safeguardVO.getSafeguardKey()),
+                Safeguard::getSafeguardKey, safeguardVO.getSafeguardKey());
+        //根据保障项名称
+        queryWrapper.like(!EmptyUtil.isNullOrEmpty(safeguardVO.getSafeguardKeyName()),
+                Safeguard::getSafeguardKeyName, safeguardVO.getSafeguardKeyName());
+        //状态
+        queryWrapper.eq(!EmptyUtil.isNullOrEmpty(safeguardVO.getDataState()),
+                Safeguard::getDataState, safeguardVO.getDataState());
+        //按照创建时间降序排
+        queryWrapper.orderByDesc(Safeguard::getCreateTime);
+
+        Page<Safeguard> resultPage = page(safeguardPage, queryWrapper);
+
+        //转换为VO
+        Page<SafeguardVO> safeguardVOPage = BeanConv.toPage(resultPage, SafeguardVO.class);
+        return safeguardVOPage;
     }
 
     @Override
-    @Cacheable(value = SafeguardCacheConstant.BASIC,key ="#safeguardId")
     public SafeguardVO findById(String safeguardId) {
-        try {
-            //执行查询
-            return BeanConv.toBean(getById(safeguardId),SafeguardVO.class);
-        }catch (Exception e){
-            log.error("保障项单条查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(SafeguardEnum.FIND_ONE_FAIL);
-        }
+        return null;
     }
 
     @Override
-    @Transactional
-    @Caching(evict = {@CacheEvict(value = SafeguardCacheConstant.PAGE,allEntries = true),
-        @CacheEvict(value = SafeguardCacheConstant.LIST,allEntries = true)},
-        put={@CachePut(value =SafeguardCacheConstant.BASIC,key = "#result.id")})
     public SafeguardVO save(SafeguardVO safeguardVO) {
-        try {
-            //转换SafeguardVO为Safeguard
-            Safeguard safeguard = BeanConv.toBean(safeguardVO, Safeguard.class);
-            boolean flag = save(safeguard);
-            if (!flag){
-                throw new RuntimeException("保存保障项失败");
-            }
-            //转换返回对象SafeguardVO
-            SafeguardVO safeguardVOHandler = BeanConv.toBean(safeguard, SafeguardVO.class);
-            return safeguardVOHandler;
-        }catch (Exception e){
-            log.error("保存保障项异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(SafeguardEnum.SAVE_FAIL);
+        Safeguard safeguard = BeanConv.toBean(safeguardVO, Safeguard.class);
+        boolean save = save(safeguard);
+        if(!save){
+            throw new RuntimeException("保存失败");
         }
+        return BeanConv.toBean(safeguard, SafeguardVO.class);
     }
 
     @Override
-    @Transactional
-    @Caching(evict = {@CacheEvict(value = SafeguardCacheConstant.PAGE,allEntries = true),
-        @CacheEvict(value = SafeguardCacheConstant.LIST,allEntries = true),
-        @CacheEvict(value = SafeguardCacheConstant.BASIC,key = "#safeguardVO.id")})
     public Boolean update(SafeguardVO safeguardVO) {
-        try {
-            //转换SafeguardVO为Safeguard
-            Safeguard safeguard = BeanConv.toBean(safeguardVO, Safeguard.class);
-            boolean flag = updateById(safeguard);
-            if (!flag){
-                throw new RuntimeException("修改保障项失败");
-            }
-            return flag;
-        }catch (Exception e){
-            log.error("修改保障项异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(SafeguardEnum.UPDATE_FAIL);
+        Safeguard safeguard = BeanConv.toBean(safeguardVO, Safeguard.class);
+        boolean flag = updateById(safeguard);
+        if (!flag){
+            throw new RuntimeException("更新失败");
         }
+        return flag;
     }
 
     @Override
-    @Transactional
-    @Caching(evict = {@CacheEvict(value = SafeguardCacheConstant.PAGE,allEntries = true),
-        @CacheEvict(value = SafeguardCacheConstant.LIST,allEntries = true),
-        @CacheEvict(value = SafeguardCacheConstant.BASIC,allEntries = true)})
     public Boolean delete(String[] checkedIds) {
-        try {
-            List<Long> idsLong = Arrays.asList(checkedIds)
-                .stream().map(Long::new).collect(Collectors.toList());
-            boolean flag = removeByIds(idsLong);
-            if (!flag){
-                throw new RuntimeException("删除保障项失败");
-            }
-            return flag;
-        }catch (Exception e){
-            log.error("删除保障项异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(SafeguardEnum.DEL_FAIL);
+        List<Long> collect = Arrays.asList(checkedIds).stream().map(Long::new).collect(Collectors.toList());
+        boolean flag = removeByIds(collect);
+        if (!flag){
+            throw new RuntimeException("删除失败");
         }
+        return flag;
     }
 
     @Override
-    @Cacheable(value = SafeguardCacheConstant.LIST,key ="#safeguardVO.hashCode()")
     public List<SafeguardVO> findList(SafeguardVO safeguardVO) {
-        try {
-            //构建查询条件
-            QueryWrapper<Safeguard> queryWrapper = queryWrapper(safeguardVO);
-            //执行列表查询
-            List<SafeguardVO> safeguardVOs = BeanConv.toBeanList(list(queryWrapper),SafeguardVO.class);
-            return safeguardVOs;
-        }catch (Exception e){
-            log.error("保障项列表查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(SafeguardEnum.LIST_FAIL);
-        }
+        return null;
     }
 
-
     @Override
-    @Cacheable(value = SafeguardCacheConstant.LIST,key ="#safeguardKeyList.hashCode()")
     public List<SafeguardVO> findShowPageItemByKey(List<String> safeguardKeyList) {
-        try {
-            //构建查询条件
-            LambdaQueryWrapper<Safeguard> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.in(Safeguard::getSafeguardKey,safeguardKeyList);
-            queryWrapper.eq(Safeguard::getDataState, SuperConstant.DATA_STATE_0);
-            //执行列表查询
-            List<SafeguardVO> safeguardVOs = BeanConv.toBeanList(list(queryWrapper),SafeguardVO.class);
-            return safeguardVOs;
-        }catch (Exception e){
-            log.error("保障项列表查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(SafeguardEnum.LIST_FAIL);
-        }
+        return null;
     }
 
     @Override
-    @Cacheable(value = SafeguardCacheConstant.BASIC,key ="#safeguardKey")
     public SafeguardVO findBySafeguardKey(String safeguardKey) {
-        try {
-            //构建查询条件
-            LambdaQueryWrapper<Safeguard> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(Safeguard::getSafeguardKey,safeguardKey);
-            queryWrapper.eq(Safeguard::getDataState, SuperConstant.DATA_STATE_0);
-            //执行列表查询
-            return BeanConv.toBean(getOne(queryWrapper),SafeguardVO.class);
-        }catch (Exception e){
-            log.error("保障项列表查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(SafeguardEnum.FIND_ONE_FAIL);
-        }
+        return null;
     }
+
 }
