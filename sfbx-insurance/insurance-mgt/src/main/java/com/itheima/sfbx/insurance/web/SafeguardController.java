@@ -92,5 +92,31 @@ public class SafeguardController {
         Boolean delete = safeguardService.delete(safeguardVO.getCheckedIds());
         return ResponseResultBuild.successBuild(delete);
     }
+    /***
+     * @description 多条件查询保障项列表
+     * @param safeguardVO 保障项VO对象
+     * @return List<SafeguardVO>
+     */
+    @PostMapping("list")
+    @ApiOperation(value = "多条件查询保障项列表",notes = "多条件查询保障项列表")
+    @ApiImplicitParam(name = "safeguardVO",value = "保障项VO对象",required = true,dataType = "SafeguardVO")
+    @ApiOperationSupport(includeParameters = {"safeguardVO.dataState","safeguardVO.safeguardKey","safeguardVO.safeguardKeyName","safeguardVO.safeguardVal","safeguardVO.safeguardType","safeguardVO.sortNo","safeguardVO.remake"})
+    public ResponseResult<List<SafeguardVO>> safeguardList(@RequestBody SafeguardVO safeguardVO) {
+        List<SafeguardVO> safeguardVOList = safeguardService.findList(safeguardVO);
+        return ResponseResultBuild.successBuild(safeguardVOList);
+    }
+
+    /***
+     * @description 按safeguardKey查询SafeguardVO
+     * @param safeguardKey 保障项key
+     * @return SafeguardVO
+     */
+    @PostMapping("safeguard-key/{safeguardKey}")
+    @ApiOperation(value = "保障项key查询SafeguardVO",notes = "保障项key查询SafeguardVO")
+    @ApiImplicitParam(paramType = "path",name = "safeguardKey",value = "保障项key",dataType = "String")
+    public ResponseResult<SafeguardVO> findBySafeguardKey(@PathVariable("safeguardKey") String safeguardKey) {
+        SafeguardVO safeguardVO = safeguardService.findBySafeguardKey(safeguardKey);
+        return ResponseResultBuild.successBuild(safeguardVO);
+    }
 
 }

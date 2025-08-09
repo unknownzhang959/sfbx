@@ -38,19 +38,7 @@ public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard
     @Override
     public Page<SafeguardVO> findPage(SafeguardVO safeguardVO, int pageNum, int pageSize) {
         Page<Safeguard> safeguardPage = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<Safeguard> queryWrapper = new LambdaQueryWrapper<>();
-        //根据保障项编号
-        queryWrapper.eq(!EmptyUtil.isNullOrEmpty(safeguardVO.getSafeguardKey()),
-                Safeguard::getSafeguardKey, safeguardVO.getSafeguardKey());
-        //根据保障项名称
-        queryWrapper.like(!EmptyUtil.isNullOrEmpty(safeguardVO.getSafeguardKeyName()),
-                Safeguard::getSafeguardKeyName, safeguardVO.getSafeguardKeyName());
-        //状态
-        queryWrapper.eq(!EmptyUtil.isNullOrEmpty(safeguardVO.getDataState()),
-                Safeguard::getDataState, safeguardVO.getDataState());
-        //按照创建时间降序排
-        queryWrapper.orderByDesc(Safeguard::getCreateTime);
-
+        QueryWrapper<Safeguard> queryWrapper = queryWrapper(safeguardVO);
         Page<Safeguard> resultPage = page(safeguardPage, queryWrapper);
 
         //转换为VO
@@ -94,18 +82,87 @@ public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard
     }
 
     @Override
+    @Cacheable(value = SafeguardCacheConstant.LIST,key ="#safeguardVO.hashCode()")
     public List<SafeguardVO> findList(SafeguardVO safeguardVO) {
-        return null;
+        try {
+            //构建查询条件
+            QueryWrapper<Safeguard> queryWrapper = queryWrapper(safeguardVO);
+            //执行列表查询
+            List<SafeguardVO> safeguardVOs = BeanConv.toBeanList(list(queryWrapper),SafeguardVO.class);
+            return safeguardVOs;
+        }catch (Exception e){
+            log.error("保障项列表查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
+            throw new ProjectException(SafeguardEnum.LIST_FAIL);
+        }
     }
 
+
     @Override
+    @Cacheable(value = SafeguardCacheConstant.LIST,key ="#safeguardKeyList.hashCode()")
     public List<SafeguardVO> findShowPageItemByKey(List<String> safeguardKeyList) {
-        return null;
+        try {
+            //构建查询条件
+            LambdaQueryWrapper<Safeguard> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.in(Safeguard::getSafeguardKey,safeguardKeyList);
+            queryWrapper.eq(Safeguard::getDataState, SuperConstant.DATA_STATE_0);
+            //执行列表查询
+            List<SafeguardVO> safeguardVOs = BeanConv.toBeanList(list(queryWrapper),SafeguardVO.class);
+            return safeguardVOs;
+        }catch (Exception e){
+            log.error("保障项列表查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
+            throw new ProjectException(SafeguardEnum.LIST_FAIL);
+        }
     }
 
     @Override
+    @Cacheable(value = SafeguardCacheConstant.BASIC,key ="#safeguardKey")
     public SafeguardVO findBySafeguardKey(String safeguardKey) {
-        return null;
+        try {
+            //构建查询条件
+            LambdaQueryWrapper<Safeguard> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Safeguard::getSafeguardKey,safeguardKey);
+            queryWrapper.eq(Safeguard::getDataState, SuperConstant.DATA_STATE_0);
+            //执行列表查询
+            return BeanConv.toBean(getOne(queryWrapper),SafeguardVO.class);
+        }catch (Exception e){
+            log.error("保障项列表查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
+            throw new ProjectException(SafeguardEnum.FIND_ONE_FAIL);
+        }
+    }
+    /***
+     * @description 保障项多条件组合
+     * @param safeguardVO 保障项
+     * @return QueryWrapper查询条件
+     */
+    private QueryWrapper<Safeguard> queryWrapper(SafeguardVO safeguardVO){
+        QueryWrapper<Safeguard> queryWrapper = new QueryWrapper<>();
+        //条例键查询
+        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getSafeguardKey())) {
+            queryWrapper.lambda().eq(Safeguard::getSafeguardKey,safeguardVO.getSafeguardKey());
+        }
+        //条例键名称查询
+        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getSafeguardKeyName())) {
+            queryWrapper.lambda().eq(Safeguard::getSafeguardKeyName,safeguardVO.getSafeguardKeyName());
+        }
+        //条例值查询
+        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getSafeguardVal())) {
+            queryWrapper.lambda().eq(Safeguard::getSafeguardVal,safeguardVO.getSafeguardVal());
+        }
+        //排序查询
+        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getSortNo())) {
+            queryWrapper.lambda().eq(Safeguard::getSortNo,safeguardVO.getSortNo());
+        }
+        //备注查询
+        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getRemake())) {
+            queryWrapper.lambda().eq(Safeguard::getRemake,safeguardVO.getRemake());
+        }
+        //状态查询
+        if (!EmptyUtil.isNullOrEmpty(safeguardVO.getDataState())) {
+            queryWrapper.lambda().eq(Safeguard::getDataState,safeguardVO.getDataState());
+        }
+        //按创建时间降序
+        queryWrapper.lambda().orderByDesc(Safeguard::getCreateTime);
+        return queryWrapper;
     }
 
 }
