@@ -34,66 +34,135 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 public class CoefficentServiceImpl extends ServiceImpl<CoefficentMapper, Coefficent> implements ICoefficentService {
+    @Override
+    public Page<CoefficentVO> findPage(CoefficentVO coefficentVO, int pageNum, int pageSize) {
+        Page<Coefficent> CoefficentPage = new Page<>(pageNum,pageSize);
+        QueryWrapper<Coefficent> queryWrapper = queryWrapper(coefficentVO);
+        Page<Coefficent> page1 = page(CoefficentPage, queryWrapper);
+        Page<CoefficentVO> page = BeanConv.toPage(page1, CoefficentVO.class);
+        return page;
+    }
 
 
-    /***
-    * @description 系数项多条件组合
-    * @param coefficentVO 系数项
-    * @return QueryWrapper查询条件
-    */
-    private QueryWrapper<Coefficent> queryWrapper(CoefficentVO coefficentVO){
-        QueryWrapper<Coefficent> queryWrapper = new QueryWrapper<>();
-        //系数键名称查询
-        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getCoefficentKeyName())) {
-            queryWrapper.lambda().eq(Coefficent::getCoefficentKeyName,coefficentVO.getCoefficentKeyName());
+    @Override
+    public CoefficentVO save(CoefficentVO coefficentVO) {
+        Coefficent coefficent = BeanConv.toBean(coefficentVO, Coefficent.class);
+        boolean b = save(coefficent);
+        if (!b){
+            throw new ProjectException(CoefficentEnum.SAVE_FAIL);
         }
-        //系数键查询
-        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getCoefficentKey())) {
-            queryWrapper.lambda().eq(Coefficent::getCoefficentKey,coefficentVO.getCoefficentKey());
-        }
-        //系数项类型：0、选项系数1、范围类型
-        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getCoefficentType())) {
-            queryWrapper.lambda().eq(Coefficent::getCoefficentType,coefficentVO.getCoefficentType());
-        }
-        //排序查询
-        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getSortNo())) {
-            queryWrapper.lambda().eq(Coefficent::getSortNo,coefficentVO.getSortNo());
-        }
-        //备注查询
-        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getRemake())) {
-            queryWrapper.lambda().eq(Coefficent::getRemake,coefficentVO.getRemake());
-        }
-        //状态查询
-        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getDataState())) {
-            queryWrapper.lambda().eq(Coefficent::getDataState,coefficentVO.getDataState());
-        }
-        //状态查询
-        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getCheckedIds())) {
-            queryWrapper.lambda().in(Coefficent::getCoefficentKey,coefficentVO.getCheckedIds());
-        }
-        //按创建时间降序
-        queryWrapper.lambda().orderByDesc(Coefficent::getCreateTime);
-        return queryWrapper;
+        return BeanConv.toBean(coefficent, CoefficentVO.class);
     }
 
     @Override
-    @Cacheable(value = CoefficentCacheConstant.PAGE,key ="#pageNum+'-'+#pageSize+'-'+#coefficentVO.hashCode()")
-    public Page<CoefficentVO> findPage(CoefficentVO coefficentVO, int pageNum, int pageSize) {
+    public Boolean update(CoefficentVO coefficentVO) {
+        Coefficent coefficent = BeanConv.toBean(coefficentVO, Coefficent.class);
+        boolean b = updateById(coefficent);
+        if (!b){
+            throw new ProjectException(CoefficentEnum.UPDATE_FAIL);
+        }
+        return b;
+    }
+
+    @Override
+    public Boolean delete(String[] checkedIds) {
         try {
-            //构建分页对象
-            Page<Coefficent> CoefficentPage = new Page<>(pageNum,pageSize);
-            //构建查询条件
-            QueryWrapper<Coefficent> queryWrapper = queryWrapper(coefficentVO);
-            //执行分页查询
-            Page<CoefficentVO> coefficentVOPage = BeanConv.toPage(
-                page(CoefficentPage, queryWrapper), CoefficentVO.class);
-            //返回结果
-            return coefficentVOPage;
+            List<Long> idsLong = Arrays.asList(checkedIds).stream().map(Long::new).collect(Collectors.toList());
+            boolean flag = removeByIds(idsLong);
+            if (!flag){
+                throw new RuntimeException("删除系数项失败");
+            }
+            return flag;
         }catch (Exception e){
-            log.error("系数项分页查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(CoefficentEnum.PAGE_FAIL);
+            log.error("删除系数项异常：{}", ExceptionsUtil.getStackTraceAsString(e));
+            throw new ProjectException(CoefficentEnum.DEL_FAIL);
         }
     }
+
+
+
+//    @Override
+//    @Cacheable(value = CoefficentCacheConstant.PAGE,key ="#pageNum+'-'+#pageSize+'-'+#coefficentVO.hashCode()")
+//    public Page<CoefficentVO> findPage(CoefficentVO coefficentVO, int pageNum, int pageSize) {
+//        try {
+//            //构建分页对象
+//            Page<Coefficent> CoefficentPage = new Page<>(pageNum,pageSize);
+//            //构建查询条件
+//            QueryWrapper<Coefficent> queryWrapper = queryWrapper(coefficentVO);
+//            //执行分页查询
+//            Page<CoefficentVO> coefficentVOPage = BeanConv.toPage(
+//                page(CoefficentPage, queryWrapper), CoefficentVO.class);
+//            //返回结果
+//            return coefficentVOPage;
+//        }catch (Exception e){
+//            log.error("系数项分页查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
+//            throw new ProjectException(CoefficentEnum.PAGE_FAIL);
+//        }
+//    }
+//
+//
+//    @Override
+//    @Transactional
+//    @Caching(evict = {@CacheEvict(value = CoefficentCacheConstant.PAGE,allEntries = true),
+//        @CacheEvict(value = CoefficentCacheConstant.LIST,allEntries = true)},
+//        put={@CachePut(value =CoefficentCacheConstant.BASIC,key = "#result.id")})
+//    public CoefficentVO save(CoefficentVO coefficentVO) {
+//        try {
+//            //转换CoefficentVO为Coefficent
+//            Coefficent coefficent = BeanConv.toBean(coefficentVO, Coefficent.class);
+//            boolean flag = save(coefficent);
+//            if (!flag){
+//                throw new RuntimeException("保存系数项失败");
+//            }
+//            //转换返回对象CoefficentVO
+//            CoefficentVO coefficentVOHandler = BeanConv.toBean(coefficent, CoefficentVO.class);
+//            return coefficentVOHandler;
+//        }catch (Exception e){
+//            log.error("保存系数项异常：{}", ExceptionsUtil.getStackTraceAsString(e));
+//            throw new ProjectException(CoefficentEnum.SAVE_FAIL);
+//        }
+//    }
+//
+//    @Override
+//    @Transactional
+//    @Caching(evict = {@CacheEvict(value = CoefficentCacheConstant.PAGE,allEntries = true),
+//        @CacheEvict(value = CoefficentCacheConstant.LIST,allEntries = true),
+//        @CacheEvict(value = CoefficentCacheConstant.BASIC,key = "#coefficentVO.id")})
+//    public Boolean update(CoefficentVO coefficentVO) {
+//        try {
+//            //转换CoefficentVO为Coefficent
+//            Coefficent coefficent = BeanConv.toBean(coefficentVO, Coefficent.class);
+//            boolean flag = updateById(coefficent);
+//            if (!flag){
+//                throw new RuntimeException("修改系数项失败");
+//            }
+//            return flag;
+//        }catch (Exception e){
+//            log.error("修改系数项异常：{}", ExceptionsUtil.getStackTraceAsString(e));
+//            throw new ProjectException(CoefficentEnum.UPDATE_FAIL);
+//        }
+//    }
+//
+//    @Override
+//    @Transactional
+//    @Caching(evict = {@CacheEvict(value = CoefficentCacheConstant.PAGE,allEntries = true),
+//        @CacheEvict(value = CoefficentCacheConstant.LIST,allEntries = true),
+//        @CacheEvict(value = CoefficentCacheConstant.BASIC,allEntries = true)})
+//    public Boolean delete(String[] checkedIds) {
+//        try {
+//            List<Long> idsLong = Arrays.asList(checkedIds)
+//                .stream().map(Long::new).collect(Collectors.toList());
+//            boolean flag = removeByIds(idsLong);
+//            if (!flag){
+//                throw new RuntimeException("删除系数项失败");
+//            }
+//            return flag;
+//        }catch (Exception e){
+//            log.error("删除系数项异常：{}", ExceptionsUtil.getStackTraceAsString(e));
+//            throw new ProjectException(CoefficentEnum.DEL_FAIL);
+//        }
+//    }
+
 
     @Override
     @Cacheable(value = CoefficentCacheConstant.BASIC,key ="#coefficentId")
@@ -104,68 +173,6 @@ public class CoefficentServiceImpl extends ServiceImpl<CoefficentMapper, Coeffic
         }catch (Exception e){
             log.error("系数项单条查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
             throw new ProjectException(CoefficentEnum.FIND_ONE_FAIL);
-        }
-    }
-
-    @Override
-    @Transactional
-    @Caching(evict = {@CacheEvict(value = CoefficentCacheConstant.PAGE,allEntries = true),
-        @CacheEvict(value = CoefficentCacheConstant.LIST,allEntries = true)},
-        put={@CachePut(value =CoefficentCacheConstant.BASIC,key = "#result.id")})
-    public CoefficentVO save(CoefficentVO coefficentVO) {
-        try {
-            //转换CoefficentVO为Coefficent
-            Coefficent coefficent = BeanConv.toBean(coefficentVO, Coefficent.class);
-            boolean flag = save(coefficent);
-            if (!flag){
-                throw new RuntimeException("保存系数项失败");
-            }
-            //转换返回对象CoefficentVO
-            CoefficentVO coefficentVOHandler = BeanConv.toBean(coefficent, CoefficentVO.class);
-            return coefficentVOHandler;
-        }catch (Exception e){
-            log.error("保存系数项异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(CoefficentEnum.SAVE_FAIL);
-        }
-    }
-
-    @Override
-    @Transactional
-    @Caching(evict = {@CacheEvict(value = CoefficentCacheConstant.PAGE,allEntries = true),
-        @CacheEvict(value = CoefficentCacheConstant.LIST,allEntries = true),
-        @CacheEvict(value = CoefficentCacheConstant.BASIC,key = "#coefficentVO.id")})
-    public Boolean update(CoefficentVO coefficentVO) {
-        try {
-            //转换CoefficentVO为Coefficent
-            Coefficent coefficent = BeanConv.toBean(coefficentVO, Coefficent.class);
-            boolean flag = updateById(coefficent);
-            if (!flag){
-                throw new RuntimeException("修改系数项失败");
-            }
-            return flag;
-        }catch (Exception e){
-            log.error("修改系数项异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(CoefficentEnum.UPDATE_FAIL);
-        }
-    }
-
-    @Override
-    @Transactional
-    @Caching(evict = {@CacheEvict(value = CoefficentCacheConstant.PAGE,allEntries = true),
-        @CacheEvict(value = CoefficentCacheConstant.LIST,allEntries = true),
-        @CacheEvict(value = CoefficentCacheConstant.BASIC,allEntries = true)})
-    public Boolean delete(String[] checkedIds) {
-        try {
-            List<Long> idsLong = Arrays.asList(checkedIds)
-                .stream().map(Long::new).collect(Collectors.toList());
-            boolean flag = removeByIds(idsLong);
-            if (!flag){
-                throw new RuntimeException("删除系数项失败");
-            }
-            return flag;
-        }catch (Exception e){
-            log.error("删除系数项异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(CoefficentEnum.DEL_FAIL);
         }
     }
 
@@ -198,5 +205,44 @@ public class CoefficentServiceImpl extends ServiceImpl<CoefficentMapper, Coeffic
             log.error("系数项查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
             throw new ProjectException(CoefficentEnum.FIND_ONE_FAIL);
         }
+    }
+    /***
+     * @description 系数项多条件组合
+     * @param coefficentVO 系数项
+     * @return QueryWrapper查询条件
+     */
+    private QueryWrapper<Coefficent> queryWrapper(CoefficentVO coefficentVO){
+        QueryWrapper<Coefficent> queryWrapper = new QueryWrapper<>();
+        //系数键名称查询
+        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getCoefficentKeyName())) {
+            queryWrapper.lambda().like(Coefficent::getCoefficentKeyName,coefficentVO.getCoefficentKeyName());
+        }
+        //系数键查询
+        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getCoefficentKey())) {
+            queryWrapper.lambda().eq(Coefficent::getCoefficentKey,coefficentVO.getCoefficentKey());
+        }
+        //系数项类型：0、选项系数1、范围类型
+        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getCoefficentType())) {
+            queryWrapper.lambda().eq(Coefficent::getCoefficentType,coefficentVO.getCoefficentType());
+        }
+        //排序查询
+        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getSortNo())) {
+            queryWrapper.lambda().eq(Coefficent::getSortNo,coefficentVO.getSortNo());
+        }
+        //备注查询
+        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getRemake())) {
+            queryWrapper.lambda().eq(Coefficent::getRemake,coefficentVO.getRemake());
+        }
+        //状态查询
+        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getDataState())) {
+            queryWrapper.lambda().eq(Coefficent::getDataState,coefficentVO.getDataState());
+        }
+        //状态查询
+        if (!EmptyUtil.isNullOrEmpty(coefficentVO.getCheckedIds())) {
+            queryWrapper.lambda().in(Coefficent::getCoefficentKey,coefficentVO.getCheckedIds());
+        }
+        //按创建时间降序
+        queryWrapper.lambda().orderByDesc(Coefficent::getCreateTime);
+        return queryWrapper;
     }
 }

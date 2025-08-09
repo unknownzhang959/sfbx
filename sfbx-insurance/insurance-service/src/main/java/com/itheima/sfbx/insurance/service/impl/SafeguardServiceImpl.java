@@ -68,7 +68,7 @@ public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard
         Safeguard safeguard = BeanConv.toBean(safeguardVO, Safeguard.class);
         boolean save = save(safeguard);
         if(!save){
-            throw new RuntimeException("保存失败");
+            throw new ProjectException(SafeguardEnum.SAVE_FAIL);
         }
         return BeanConv.toBean(safeguard, SafeguardVO.class);
     }
@@ -78,7 +78,7 @@ public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard
         Safeguard safeguard = BeanConv.toBean(safeguardVO, Safeguard.class);
         boolean flag = updateById(safeguard);
         if (!flag){
-            throw new RuntimeException("更新失败");
+            throw new ProjectException(SafeguardEnum.UPDATE_FAIL);
         }
         return flag;
     }
@@ -88,7 +88,7 @@ public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard
         List<Long> collect = Arrays.asList(checkedIds).stream().map(Long::new).collect(Collectors.toList());
         boolean flag = removeByIds(collect);
         if (!flag){
-            throw new RuntimeException("删除失败");
+            throw new ProjectException(SafeguardEnum.DEL_FAIL);
         }
         return flag;
     }
