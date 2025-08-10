@@ -5,6 +5,7 @@ import com.itheima.sfbx.framework.commons.constant.security.SecurityConstant;
 import com.itheima.sfbx.framework.commons.dto.security.UserVO;
 import com.itheima.sfbx.framework.commons.utils.EmptyUtil;
 import com.itheima.sfbx.framework.commons.utils.SubjectContent;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
  * @ClassName WebAuthIntercept.java
  * @Description 认证信息放到SubjectContent上下文中
  */
+@Slf4j
 @Component
 public class WebAuthIntercept implements HandlerInterceptor {
 
@@ -27,19 +29,41 @@ public class WebAuthIntercept implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
                              Object handler) throws Exception {
+
         //从头部中拿到当前userToken
         String userToken = request.getHeader(SecurityConstant.USER_TOKEN);
         if (!EmptyUtil.isNullOrEmpty(userToken)){
             RBucket<UserVO> userVORBucket = redissonClient.getBucket(OauthCacheConstant.USER_TOKEN + userToken);
             UserVO userVO = userVORBucket.get();
-            //放入当前线程中：用户当前的web直接获得userVO使用
-            SubjectContent.setUserVO(userVO);
-            //下游传递userToken
-            SubjectContent.setUserToken(userToken);
-            //下游传递companyNo
-            SubjectContent.setCompanyNo(userVO.getCompanyNo());
-            //下游传递companyNo
-            SubjectContent.setDataSecurityVO(userVO.getDataSecurityVO());
+//            //放入当前线程中：用户当前的web直接获得userVO使用
+//            SubjectContent.setUserVO(userVO);
+//            //下游传递userToken
+//            SubjectContent.setUserToken(userToken);
+//            //下游传递companyNo
+//            SubjectContent.setCompanyNo(userVO.getCompanyNo());
+//            //下游传递companyNo
+//            SubjectContent.setDataSecurityVO(userVO.getDataSecurityVO());
+            // 检查userVO是否为空，防止空指针异常
+            if (userVO != null) {
+                //放入当前线程中：用户当前的web直接获得userVO使用
+                SubjectContent.setUserVO(userVO);
+                //下游传递userToken
+                SubjectContent.setUserToken(userToken);
+                //下游传递companyNo，SubjectContent可以接受null值
+                SubjectContent.setCompanyNo(userVO.getCompanyNo());
+                //下游传递dataSecurityVO，SubjectContent可以接受null值
+                SubjectContent.setDataSecurityVO(userVO.getDataSecurityVO());
+                
+                // 记录日志，便于调试
+                if (userVO.getCompanyNo() == null) {
+                    log.warn("用户token: {} 对应的companyNo为空", userToken);
+                }
+                if (userVO.getDataSecurityVO() == null) {
+                    log.warn("用户token: {} 对应的dataSecurityVO为空", userToken);
+                }
+            } else {
+                log.warn("用户token: {} 对应的用户信息为空", userToken);
+            }
         }
         return true;
     }
