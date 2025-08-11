@@ -15,6 +15,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,6 +33,8 @@ public class FileUpLoadController {
 
     @Autowired
     IFileService fileService;
+    @Value("${spring.cloud.alicloud.oss.bucket-name}")
+    private String bucketName;
 
     /***
      * @description 文件上传-简单上传-前端直接调用
@@ -47,6 +50,7 @@ public class FileUpLoadController {
     public ResponseResult<FileVO> upLoad(
             @RequestParam("file") MultipartFile file,
             FileVO fileVO) throws IOException {
+        fileVO.setBucketName(bucketName);
         fileVO.setCompanyNo(SubjectContent.getCompanyNo());
         //构建文件上传对象
         UploadMultipartFile uploadMultipartFile = UploadMultipartFile
@@ -65,6 +69,7 @@ public class FileUpLoadController {
     @ApiImplicitParam(name = "fileVO",value = "文件对象",required = true,dataType = "FileVO")
     public ResponseResult<FileVO> initiateMultipartUpload(
             @RequestBody FileVO fileVO){
+        fileVO.setBucketName(bucketName);
         fileVO.setCompanyNo(SubjectContent.getCompanyNo());
         //初始化上传Id
         FileVO fileVOResult = fileService.initiateMultipartUpload(fileVO);
@@ -79,6 +84,7 @@ public class FileUpLoadController {
     public ResponseResult<String> uploadPart(
             @RequestParam("file") MultipartFile file,
             FilePartVO filePartVO)throws IOException {
+        filePartVO.setBucketName(bucketName);
         filePartVO.setCompanyNo(SubjectContent.getCompanyNo());
         //构建文件上次对象
         UploadMultipartFile uploadMultipartFile = UploadMultipartFile
@@ -96,6 +102,7 @@ public class FileUpLoadController {
     @ApiImplicitParam(name = "fileVO",value = "文件对象",required = true,dataType = "FileVO")
     public ResponseResult<String> completeMultipartUpload(
             @RequestBody FileVO fileVO)throws IOException {
+        fileVO.setBucketName(bucketName);
         //问上传分片返回partETagJson
         String eTagJson = fileService.completeMultipartUpload(fileVO);
         return ResponseResultBuild.successBuild(eTagJson);

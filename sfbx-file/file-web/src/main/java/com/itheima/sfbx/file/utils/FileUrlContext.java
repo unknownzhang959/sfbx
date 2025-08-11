@@ -42,19 +42,35 @@ public class FileUrlContext {
         fileStoreUrlHandler.put(FileConstant.ALIYUN_OSS,ossPrefixUrl);
         fileStoreUrlHandler.put(FileConstant.QINIU_KODO,kodoPrefixUrl);
     }
-
     /**
      * 获得资源文件的访问地址
      * @param storeFlag String 对象存储标识
      * @param pathUrl String 相对路径
      * @return String 资源文件对应的完整路径地址
      */
-    public  String getFileUrl(String storeFlag, String pathUrl) {
+    public  String getFileUrl(String bucketName,String storeFlag, String pathUrl) {
         String prefix = fileStoreUrlHandler.get(storeFlag);
+        //将prefix中的bucketname换成传入的bucketName
+        prefix =prefix.replaceFirst("https://[^.]+\\.", "https://" + bucketName + ".");
         if (StringUtils.isEmpty(prefix)) {
             throw new ProjectException(FileEnum.FILE_PREFIX_NOT_FOUND);
         }
         return prefix + pathUrl;
     }
+
+//    /**
+//     * 获得资源文件的访问地址
+//     * @param storeFlag String 对象存储标识
+//     * @param pathUrl String 相对路径
+//     * @return String 资源文件对应的完整路径地址
+//     */
+//    public  String getFileUrl(String storeFlag, String pathUrl) {
+//        String prefix = fileStoreUrlHandler.get(storeFlag);
+//        if (StringUtils.isEmpty(prefix)) {
+//            throw new ProjectException(FileEnum.FILE_PREFIX_NOT_FOUND);
+//        }
+//        return prefix + pathUrl;
+//    }
+
 
 }

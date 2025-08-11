@@ -47,8 +47,15 @@ public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard
     }
 
     @Override
+    @Cacheable(value = SafeguardCacheConstant.BASIC,key ="#safeguardId")
     public SafeguardVO findById(String safeguardId) {
-        return null;
+        try {
+            //执行查询
+            return BeanConv.toBean(getById(safeguardId),SafeguardVO.class);
+        }catch (Exception e){
+            log.error("保障项单条查询异常：{}", ExceptionsUtil.getStackTraceAsString(e));
+            throw new ProjectException(SafeguardEnum.FIND_ONE_FAIL);
+        }
     }
 
     @Override

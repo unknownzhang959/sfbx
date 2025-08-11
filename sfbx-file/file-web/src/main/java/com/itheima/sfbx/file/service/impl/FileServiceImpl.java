@@ -113,7 +113,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements IF
             List<File> files = list(queryWrapper);
             if (!EmptyUtil.isNullOrEmpty(files)){
                 files.forEach(n->{
-                    String fileUrl = fileUrlContext.getFileUrl(n.getStoreFlag(), n.getPathUrl());
+                    String fileUrl = fileUrlContext.getFileUrl(n.getBucketName(),n.getStoreFlag(), n.getPathUrl());
                     n.setPathUrl(fileUrl);
                 });
             }
@@ -133,7 +133,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements IF
             Page<FileVO> fileVOPage = BeanConv.toPage(page(page, queryWrapper), FileVO.class);
             if (!EmptyUtil.isNullOrEmpty(fileVOPage)&&!EmptyUtil.isNullOrEmpty(fileVOPage.getRecords())){
                 fileVOPage.getRecords().forEach(n->{
-                    n.setPathUrl(fileUrlContext.getFileUrl(n.getStoreFlag(), n.getPathUrl()));
+                    n.setPathUrl(fileUrlContext.getFileUrl(n.getBucketName(),n.getStoreFlag(), n.getPathUrl()));
                 });
             }
             return fileVOPage;
@@ -185,7 +185,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements IF
                 queryWrapper.lambda().eq(File::getBusinessId,fileVO.getBusinessId());
                 File fileResult = getOne(queryWrapper);
                 if (!EmptyUtil.isNullOrEmpty(file)){
-                    fileResult.setPathUrl(fileUrlContext.getFileUrl(fileResult.getStoreFlag(), fileResult.getPathUrl()));
+                    fileResult.setPathUrl(fileUrlContext.getFileUrl(fileResult.getBucketName(),fileResult.getStoreFlag(), fileResult.getPathUrl()));
                 }
                 return BeanConv.toBean(fileResult,FileVO.class);
             }
@@ -215,7 +215,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements IF
             //构建完整返回对象
             if (!EmptyUtil.isNullOrEmpty(files)){
                 files.forEach(n->{
-                    String fileUrl = fileUrlContext.getFileUrl(n.getStoreFlag(), n.getPathUrl());
+                    String fileUrl = fileUrlContext.getFileUrl(n.getBucketName(),n.getStoreFlag(), n.getPathUrl());
                     n.setPathUrl(fileUrl);
                 });
             }
@@ -292,7 +292,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements IF
             queryWrapper.lambda().in(File::getBusinessId,businessIds);
             List<FileVO> fileVOList = BeanConv.toBeanList(list(queryWrapper), FileVO.class);
             for (FileVO fileVO : fileVOList) {
-                fileVO.setPathUrl(fileUrlContext.getFileUrl(fileVO.getStoreFlag(), fileVO.getPathUrl()));
+                fileVO.setPathUrl(fileUrlContext.getFileUrl(fileVO.getBucketName(),fileVO.getStoreFlag(), fileVO.getPathUrl()));
             }
             return fileVOList;
         }catch (Exception e){
@@ -453,7 +453,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements IF
                 throw new ProjectException(FileEnum.UPLOAD_FAIL);
             }
             //补全完整路径
-            pathUrl = fileUrlContext.getFileUrl(fileVO.getStoreFlag(), pathUrl);
+            pathUrl = fileUrlContext.getFileUrl(fileVO.getBucketName(),fileVO.getStoreFlag(), pathUrl);
             fileVO.setId(file.getId());
             fileVO.setPathUrl(pathUrl);
             //发送延迟信息:上传如果超过10分钟不进行文件业务绑定则会被消息队列清空
@@ -512,7 +512,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements IF
             }
             //补全完整路径
             FileVO fileVOResult = BeanConv.toBean(file, FileVO.class);
-            String pathUrl = fileUrlContext.getFileUrl(fileVOResult.getStoreFlag(), fileVOResult.getPathUrl());
+            String pathUrl = fileUrlContext.getFileUrl(fileVOResult.getBucketName(),fileVOResult.getStoreFlag(), fileVOResult.getPathUrl());
             fileVOResult.setPathUrl(pathUrl);
             //发送队列信息:上传如果超过10分钟不进行文件业务绑定则会被消息队列清空
             Long messageId = (Long) identifierGenerator.nextId(fileVOResult);
