@@ -19,9 +19,7 @@ import com.itheima.sfbx.insurance.dto.*;
 import com.itheima.sfbx.insurance.enums.InsuranceEnum;
 import com.itheima.sfbx.insurance.handler.InsureHandler;
 import com.itheima.sfbx.insurance.mapper.InsuranceMapper;
-import com.itheima.sfbx.insurance.pojo.Insurance;
-import com.itheima.sfbx.insurance.pojo.InsuranceCondition;
-import com.itheima.sfbx.insurance.pojo.SearchRecord;
+import com.itheima.sfbx.insurance.pojo.*;
 import com.itheima.sfbx.insurance.service.*;
 import com.itheima.sfbx.security.feign.CompanyFeign;
 import io.seata.spring.annotation.GlobalTransactional;
@@ -35,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -66,9 +65,13 @@ public class InsuranceServiceImpl extends ServiceImpl<InsuranceMapper, Insurance
 
     @Autowired
     private ISearchRecordService searchRecordService;
+    @Autowired
+    private IBrowsingHistoryService browsingHistoryService;
 
     @Resource(name = "searchRecordExecutor")
     private Executor searchRecordExecutor;
+    @Resource(name = "browsingHistoryExecutor")
+    private Executor browsingHistoryExecutor;
 
     /***
     * @description 保险产品多条件组合
@@ -220,8 +223,8 @@ public class InsuranceServiceImpl extends ServiceImpl<InsuranceMapper, Insurance
             if(!EmptyUtil.isNullOrEmpty(insuranceVO)){
                 //补全产品从属性
                 insuranceVO = buildResult(Lists.newArrayList(insuranceVO)).get(0);
-                //异步保存保险搜索记录
-                createSearchContent(Lists.newArrayList(insuranceVO), SubjectContent.getUserVO());
+                //异步保存保险浏览记录
+                createBrowsingHistory(Lists.newArrayList(insuranceVO), SubjectContent.getUserVO());
             }
             return insuranceVO;
         }catch (Exception e){
@@ -230,6 +233,25 @@ public class InsuranceServiceImpl extends ServiceImpl<InsuranceMapper, Insurance
         }
     }
 
+    private void createBrowsingHistory(ArrayList<InsuranceVO> insuranceVOs, UserVO userVO) {
+        browsingHistoryExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                ArrayList<BrowsingHistory> browsingHistoriesList = new ArrayList<>();
+                for (InsuranceVO insuranceVO: insuranceVOs) {
+                    BrowsingHistory browsingHistory = BrowsingHistory.builder().
+                            insuranceId(insuranceVO.getId()).
+                            sortNo(insuranceVO.getSortNo()).
+                            createBy(userVO.getId()).
+                            createTime(LocalDateTime.now()).
+                            dataState(SuperConstant.DATA_STATE_0).
+                            build();
+                    browsingHistoriesList.add(browsingHistory);
+                }
+                browsingHistoryService.saveBatch(browsingHistoriesList);
+            }
+        });
+    }
 
 
     @Override

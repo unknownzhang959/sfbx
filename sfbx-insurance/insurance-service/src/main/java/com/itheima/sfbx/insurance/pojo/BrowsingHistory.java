@@ -9,6 +9,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.EqualsAndHashCode;
 
+import java.time.LocalDateTime;
+
 /**
  * @Description：浏览记录
  */
@@ -22,10 +24,12 @@ public class BrowsingHistory extends BasePojo {
     private static final long serialVersionUID = 1L;
 
     @Builder
-    public BrowsingHistory(Long id,String dataState,Long insuranceId,Integer sortNo){
+    public BrowsingHistory(Long id,String dataState,Long createBy,LocalDateTime createTime,Long insuranceId,Integer sortNo){
         super(id, dataState);
         this.insuranceId=insuranceId;
         this.sortNo=sortNo;
+        this.createTime=createTime;
+        this.createBy=createBy;
     }
 
     @ApiModelProperty(value = "保险ID")
@@ -33,6 +37,11 @@ public class BrowsingHistory extends BasePojo {
 
     @ApiModelProperty(value = "排序")
     private Integer sortNo;
+
+    @ApiModelProperty(value = "创建时间")
+    private LocalDateTime createTime;
+    @ApiModelProperty(value = "创建人")
+    private Long createBy;
 
 
 }
