@@ -2,11 +2,14 @@ package com.itheima.sfbx.insurance.handler.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.itheima.sfbx.framework.commons.constant.warranty.WarrantyConstant;
+import com.itheima.sfbx.framework.commons.utils.EmptyUtil;
+import com.itheima.sfbx.insurance.constant.InsuranceConstant;
 import com.itheima.sfbx.insurance.dto.*;
 import com.itheima.sfbx.insurance.handler.InsureHandler;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.List;
 
 /**

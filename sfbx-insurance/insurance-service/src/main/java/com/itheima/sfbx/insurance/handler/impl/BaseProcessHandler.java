@@ -336,6 +336,7 @@ public class BaseProcessHandler implements InsureProcessHandler {
         if (!EmptyUtil.isNullOrEmpty(numberOfPeopleList)) {
             //获得投保人数
             Long numberOfPeople = Long.valueOf(insureds.size());
+            //投保人数系数
             List<InsuranceCoefficentVO> numberOfPeopleListHandler = numberOfPeopleList.stream().filter(n -> {
                 //转换为RangJsonAttribute处理对象
                 RangJsonAttribute rangJsonAttribute = JSONObject.parseObject(n.getCoefficentValue(), RangJsonAttribute.class);

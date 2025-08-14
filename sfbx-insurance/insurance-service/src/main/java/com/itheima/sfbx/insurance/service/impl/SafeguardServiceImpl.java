@@ -36,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard> implements ISafeguardService {
     @Override
+    @Cacheable(value = SafeguardCacheConstant.PAGE,key ="#pageNum+'-'+#pageSize+'-'+#safeguardVO.hashCode()")
     public Page<SafeguardVO> findPage(SafeguardVO safeguardVO, int pageNum, int pageSize) {
         Page<Safeguard> safeguardPage = new Page<>(pageNum, pageSize);
         QueryWrapper<Safeguard> queryWrapper = queryWrapper(safeguardVO);
@@ -59,6 +60,12 @@ public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard
     }
 
     @Override
+    @Caching(
+            evict = {@CacheEvict(value = SafeguardCacheConstant.LIST,allEntries = true),
+            @CacheEvict(value = SafeguardCacheConstant.PAGE,allEntries = true)
+    },
+            put = {@CachePut(value = SafeguardCacheConstant.BASIC,key = "#result.id")}
+    )
     public SafeguardVO save(SafeguardVO safeguardVO) {
         Safeguard safeguard = BeanConv.toBean(safeguardVO, Safeguard.class);
         boolean save = save(safeguard);
@@ -69,6 +76,12 @@ public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard
     }
 
     @Override
+    @Caching(
+            evict = {@CacheEvict(value = SafeguardCacheConstant.LIST,allEntries = true),
+            @CacheEvict(value = SafeguardCacheConstant.PAGE,allEntries = true),
+            @CacheEvict(value = SafeguardCacheConstant.BASIC,key = "#safeguardVO.id")
+    }
+    )
     public Boolean update(SafeguardVO safeguardVO) {
         Safeguard safeguard = BeanConv.toBean(safeguardVO, Safeguard.class);
         boolean flag = updateById(safeguard);
@@ -79,6 +92,10 @@ public class SafeguardServiceImpl extends ServiceImpl<SafeguardMapper, Safeguard
     }
 
     @Override
+    @Caching(evict = {@CacheEvict(value = SafeguardCacheConstant.LIST,allEntries = true),
+            @CacheEvict(value = SafeguardCacheConstant.PAGE,allEntries = true),
+            @CacheEvict(value = SafeguardCacheConstant.BASIC,allEntries = true)
+    })
     public Boolean delete(String[] checkedIds) {
         List<Long> collect = Arrays.asList(checkedIds).stream().map(Long::new).collect(Collectors.toList());
         boolean flag = removeByIds(collect);
