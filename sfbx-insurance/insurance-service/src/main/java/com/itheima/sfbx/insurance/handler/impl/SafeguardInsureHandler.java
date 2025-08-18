@@ -245,7 +245,6 @@ public class SafeguardInsureHandler implements InsureHandler {
 
     @Override
     public String doPremium(DoInsureVo doInsureVo) {
-        //========================================参数预处理=========================================================
         //判断个险类
         if (doInsureVo.getCustomerRelationIds().size()>1){
             throw new RuntimeException("不支持团险");
@@ -254,11 +253,13 @@ public class SafeguardInsureHandler implements InsureHandler {
         if (!EmptyUtil.isNullOrEmpty(doInsureVo.getSafeguardStartTime())){
             throw new RuntimeException("不支持指定生效期");
         }
+        //========================================参数预处理=========================================================
         //投保对象信息
         InsureProcessVO insureProcessVO = insureProcessHandler.buildInsureProcessVO(doInsureVo.getInsuranceId(),
             doInsureVo.getInsurancePlanId(),
             doInsureVo.getCompanyNo(),
             doInsureVo.getInsuranceCoefficentIds());
+        //========================================参数预处理=========================================================
         //保险产品
         InsuranceVO insuranceVO = insureProcessVO.getInsuranceVO();
         //保险方案
@@ -267,12 +268,12 @@ public class SafeguardInsureHandler implements InsureHandler {
         List<InsuranceCoefficentVO> coefficentVOs = insureProcessVO.getCoefficents();
         //被投保人信息
         CustomerRelationVO insured = insureProcessHandler.buildInsured(doInsureVo.getCustomerRelationIds().get(0));
+        //========================================系数预处理=========================================================
         //检测投保年龄
         Boolean flag = insureProcessHandler.checkAge(insuranceVO,insured);
         if (!flag){
             return "-1";
         }
-        //========================================系数预处理=========================================================
         //投保年龄系数
         coefficentVOs = insureProcessHandler.ageHandler(coefficentVOs,insuranceVO.getId(),insured);
         //检查系数唯一性
@@ -285,6 +286,7 @@ public class SafeguardInsureHandler implements InsureHandler {
         if (!flag){
             throw new RuntimeException("保障型保险缺少必填参数!");
         }
+        //========================================系数预处理=========================================================
         //保费计算
         return insureProcessHandler.premiumComputeSafeguard(insurancePlanVO,coefficentVOs);
     }

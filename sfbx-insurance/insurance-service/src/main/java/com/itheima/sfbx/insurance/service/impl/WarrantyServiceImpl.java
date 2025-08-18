@@ -58,11 +58,13 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -533,6 +535,8 @@ public class WarrantyServiceImpl extends ServiceImpl<WarrantyMapper, Warranty> i
 
     @Autowired
     WarrantySource warrantySource;
+    @Resource(name = "insureExecutor")
+    private Executor insureExecutor;
 
     @Override
     @GlobalTransactional
@@ -543,15 +547,16 @@ public class WarrantyServiceImpl extends ServiceImpl<WarrantyMapper, Warranty> i
                 .getBean(insuranceTypeMap.get(doInsureVo.getCheckRule()), InsureHandler.class);
             //保险合同生成
             WarrantyVO warrantyVOHandler = insureHandler.doInsure(doInsureVo);
+            warrantyVOHandler.setUnderwritingState(WarrantyConstant.UNDERWRITING_STATE_3);
             WarrantyVO warrantyVO =  save(warrantyVOHandler);
-            //保司承保
-            ResponseDTO responseDTO = tripartiteInsureService.insure(warrantyVOHandler);
-            if (!"2000".equals(responseDTO.getCode())){
-                throw new RuntimeException("核保不通过！");
-            }
-            warrantyVO.setUnderwritingState(WarrantyConstant.UNDERWRITING_STATE_3);
-            //同步合同状态
-            update(warrantyVO);
+//            //保司承保
+//            ResponseDTO responseDTO = tripartiteInsureService.insure(warrantyVOHandler);
+//            if (!"2000".equals(responseDTO.getCode())){
+//                throw new RuntimeException("核保不通过！");
+//            }
+//            warrantyVO.setUnderwritingState(WarrantyConstant.UNDERWRITING_STATE_3);
+//            //同步合同状态
+//            update(warrantyVO);
             //合同订单生成
             List<WarrantyOrderVO> warrantyOrderVO = insureHandler.createWarrantyOrderVO(warrantyVO);
             warrantyOrderService.saveBatch(BeanConv.toBeanList(warrantyOrderVO, WarrantyOrder.class));
@@ -569,22 +574,28 @@ public class WarrantyServiceImpl extends ServiceImpl<WarrantyMapper, Warranty> i
             });
             warrantyInsuredService.saveBatch(warrantyInsureds);
             //发送队列信息:合同如果超过10分钟不进行支付处理，则会被消息队列清空
-            Long messageId = (Long) identifierGenerator.nextId(doInsureVo);
-            MqMessage mqMessage = MqMessage.builder()
-                .id(messageId)
-                .title("warranty-message")
-                .content(warrantyVO.getWarrantyNo())
-                .messageType("warranty-request")
-                .produceTime(Timestamp.valueOf(LocalDateTime.now()))
-                .sender("system")
-                .build();
-            Message<MqMessage> message = MessageBuilder.withPayload(mqMessage).setHeader("x-delay", warrantyDelayTime).build();
-            boolean send = warrantySource.warrantyOutput().send(message);
+            sendDelayMsqSync(doInsureVo,warrantyVO);
             return warrantyVO;
         }catch (Exception e){
             log.error("保存合同信息异常：{}", ExceptionsUtil.getStackTraceAsString(e));
             throw new ProjectException(WarrantyEnum.SAVE_FAIL);
         }
+    }
+
+    private void sendDelayMsqSync(DoInsureVo doInsureVo, WarrantyVO warrantyVO) {
+        insureExecutor.execute(()->{
+            Long messageId = (Long) identifierGenerator.nextId(doInsureVo);
+            MqMessage mqMessage = MqMessage.builder()
+                    .id(messageId)
+                    .title("warranty-message")
+                    .content(warrantyVO.getWarrantyNo())
+                    .messageType("warranty-request")
+                    .produceTime(Timestamp.valueOf(LocalDateTime.now()))
+                    .sender("system")
+                    .build();
+            Message<MqMessage> message = MessageBuilder.withPayload(mqMessage).setHeader("x-delay", warrantyDelayTime).build();
+            boolean send = warrantySource.warrantyOutput().send(message);
+        });
     }
 
     @Override

@@ -71,6 +71,7 @@ public class BaseProcessHandler implements InsureProcessHandler {
         if (EmptyUtil.isNullOrEmpty(insuranceVO)){
             throw new RuntimeException("保险异常");
         }
+        //保险产品状态
         if (SuperConstant.DATA_STATE_1.equals(insuranceVO.getDataState())||
                 SuperConstant.DATA_STATE_1.equals(insuranceVO.getInsuranceState())){
             throw new RuntimeException("保险下架");

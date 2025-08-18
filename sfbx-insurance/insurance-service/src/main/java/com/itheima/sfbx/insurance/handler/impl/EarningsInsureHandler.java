@@ -246,11 +246,13 @@ public class EarningsInsureHandler implements InsureHandler {
         if (!EmptyUtil.isNullOrEmpty(doInsureVo.getSafeguardStartTime())){
             throw new RuntimeException("不支持指定生效期");
         }
+        //===========================================参数预处理============================================
         //投保对象信息
         InsureProcessVO insureProcessVO = insureProcessHandler.buildInsureProcessVO(doInsureVo.getInsuranceId(),
             doInsureVo.getInsurancePlanId(),
             doInsureVo.getCompanyNo(),
             doInsureVo.getInsuranceCoefficentIds());
+        //===========================================参数预处理============================================
         //保险产品
         InsuranceVO insuranceVO = insureProcessVO.getInsuranceVO();
         //保险方案
@@ -261,6 +263,7 @@ public class EarningsInsureHandler implements InsureHandler {
         CustomerRelationVO applicant = insureProcessHandler.buildApplicant();
         //被投保人信息
         CustomerRelationVO insured = insureProcessHandler.buildInsured(doInsureVo.getCustomerRelationIds().get(0));
+        //============================================系数预处理===========================================
         //系数唯一性检查
         Boolean flag = insureProcessHandler.checkBaseOnly(coefficentVOs);
         if (!flag){
@@ -282,7 +285,8 @@ public class EarningsInsureHandler implements InsureHandler {
         if (!flag){
             throw new RuntimeException("投保金额不符合!");
         }
-        //试算收益
+        //============================================系数预处理===========================================
+        //============================================试算收益==============================================
         return insureProcessHandler.earningsCompute(null,applicant,doInsureVo,insurancePlanVO, coefficentVOs, insured,true);
     }
 
